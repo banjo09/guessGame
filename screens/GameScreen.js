@@ -1,18 +1,16 @@
-import { View, Text, StyleSheet, Alert, FlatList } from "react-native";
-import Title from "../components/ui/Ttile";
-import NumberContainer from "../components/game/NumberContainer";
-import { useState, useEffect } from "react";
-import PrimaryButton from "../components/ui/PrimaryButton";
-import Card from "../components/ui/Card";
-import InstructionText from "../components/ui/InstructionText";
-import { Ionicons } from "@expo/vector-icons";
-import GuessItemLog from "../components/game/GuessLogItem";
+import { useState, useEffect } from 'react';
+import { View, StyleSheet, Alert, Text, FlatList } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
+import NumberContainer from '../components/game/NumberContainer';
+import Card from '../components/ui/Card';
+import InstructionText from '../components/ui/InstructionText';
+import PrimaryButton from '../components/ui/PrimaryButton';
+import Title from '../components/ui/Title';
+import GuessLogItem from '../components/game/GuessLogItem';
 
 function generateRandomBetween(min, max, exclude) {
-  // console.log(min, max, exclude);
   const rndNum = Math.floor(Math.random() * (max - min)) + min;
-  // console.log(rndNum);
-  // console.log();
 
   if (rndNum === exclude) {
     return generateRandomBetween(min, max, exclude);
@@ -21,82 +19,88 @@ function generateRandomBetween(min, max, exclude) {
   }
 }
 
-let minBound = 1;
-let maxBound = 100;
+let minBoundary = 1;
+let maxBoundary = 100;
 
 function GameScreen({ userNumber, onGameOver }) {
   const initialGuess = generateRandomBetween(1, 100, userNumber);
   const [currentGuess, setCurrentGuess] = useState(initialGuess);
-  const [rounds, setRounds] = useState([initialGuess]);
-  // console.log(currentGuess);
+  const [guessRounds, setGuessRounds] = useState([initialGuess]);
 
   useEffect(() => {
     if (currentGuess === userNumber) {
-      onGameOver(rounds.length);
+      onGameOver(guessRounds.length);
     }
   }, [currentGuess, userNumber, onGameOver]);
 
   useEffect(() => {
-    minBound = 1;
-    maxBound = 100;
+    minBoundary = 1;
+    maxBoundary = 100;
   }, []);
 
   function nextGuessHandler(direction) {
-    console.log(direction, currentGuess, userNumber);
-    console.log();
+    // direction => 'lower', 'greater'
     if (
-      (direction === "lower" && currentGuess < userNumber) ||
-      (direction === "higher" && currentGuess > userNumber)
+      (direction === 'lower' && currentGuess < userNumber) ||
+      (direction === 'greater' && currentGuess > userNumber)
     ) {
-      Alert.alert("Don't lie!", "You know that this is wrong...", [
-        { text: "Sorry!", style: "cancel" },
+      Alert.alert("Don't lie!", 'You know that this is wrong...', [
+        { text: 'Sorry!', style: 'cancel' },
       ]);
       return;
     }
 
-    let newRandomNumber = 0;
-    if (direction === "lower") {
-      maxBound = currentGuess;
+    if (direction === 'lower') {
+      maxBoundary = currentGuess;
     } else {
-      minBound = currentGuess + 1;
+      minBoundary = currentGuess + 1;
     }
-    newRandomNumber = generateRandomBetween(minBound, maxBound, currentGuess);
-    setCurrentGuess(newRandomNumber);
-    setRounds((currentRounds) => [newRandomNumber, ...currentRounds]);
+
+    const newRndNumber = generateRandomBetween(
+      minBoundary,
+      maxBoundary,
+      currentGuess
+    );
+    setCurrentGuess(newRndNumber);
+    setGuessRounds((prevGuessRounds) => [newRndNumber, ...prevGuessRounds]);
   }
+
+  const guessRoundsListLength = guessRounds.length;
 
   return (
     <View style={styles.screen}>
-      <Title child="Opponent's Guess" />
-      <NumberContainer child={currentGuess} />
-
+      <Title>Opponent's Guess</Title>
+      <NumberContainer>{currentGuess}</NumberContainer>
       <Card>
-        <InstructionText
-          style={styles.InstructionText}
-          child="Higher or Lower"
-        />
+        <InstructionText style={styles.instructionText}>
+          Higher or lower?
+        </InstructionText>
         <View style={styles.buttonsContainer}>
-          <PrimaryButton
-            style1={styles.plusminus}
-            child={<Ionicons name="md-add" size={24} color="white" />}
-            onPress={nextGuessHandler.bind(this, "higher")}
-          />
-          <PrimaryButton
-            style1={styles.plusminus}
-            child={<Ionicons name="md-remove" size={24} color="white" />}
-            onPress={nextGuessHandler.bind(this, "lower")}
-          />
+          <View style={styles.buttonContainer}>
+            <PrimaryButton onPress={nextGuessHandler.bind(this, 'lower')}>
+              <Ionicons name="md-remove" size={24} color="white" />
+            </PrimaryButton>
+          </View>
+          <View style={styles.buttonContainer}>
+            <PrimaryButton onPress={nextGuessHandler.bind(this, 'greater')}>
+              <Ionicons name="md-add" size={24} color="white" />
+            </PrimaryButton>
+          </View>
         </View>
       </Card>
-
       <View style={styles.listContainer}>
-        <FlatList 
-          data={rounds}
-          keyExtractor={(item) => item.toString()}
-          renderItem={(itemData) =>  <GuessItemLog guess={itemData.item} roundNo={rounds.length - itemData.index} />}
+        {/* {guessRounds.map(guessRound => <Text key={guessRound}>{guessRound}</Text>)} */}
+        <FlatList
+          data={guessRounds}
+          renderItem={(itemData) => (
+            <GuessLogItem
+              roundNumber={guessRoundsListLength - itemData.index}
+              guess={itemData.item}
+            />
+          )}
+          keyExtractor={(item) => item}
         />
       </View>
-      
     </View>
   );
 }
@@ -108,19 +112,17 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 24,
   },
-  InstructionText: {
+  instructionText: {
     marginBottom: 12,
   },
-  plusminus: {
-    width: 130,
-    marginHorizontal: 12,
-  },
   buttonsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
+    flexDirection: 'row',
+  },
+  buttonContainer: {
+    flex: 1,
   },
   listContainer: {
     flex: 1,
     padding: 16,
-  }
+  },
 });
